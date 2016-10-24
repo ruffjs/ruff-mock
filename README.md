@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ruffjs/ruff-mock.svg)](https://travis-ci.org/ruffjs/ruff-mock)
+
 # Ruff Mocking Library
 
 The built-in mocking library of Ruff.
