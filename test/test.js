@@ -1,6 +1,7 @@
 'use strict';
 
 var assert = require('assert');
+var EventEmitter = require('events');
 
 var mock = require('../');
 
@@ -59,6 +60,23 @@ it('should return expected value multiple times', function () {
     whenever(foo).bar('test').return('result');
     assert.equal(foo.bar('test'), 'result');
     assert.equal(foo.bar('test'), 'result');
+});
+
+it('should return expected values', function () {
+    var foo = mock(new Foo());
+    when(foo).bar('test').return('a');
+    when(foo).bar('test').return('b');
+    assert.equal(foo.bar('test'), 'a');
+    assert.equal(foo.bar('test'), 'b');
+});
+
+it('should work with event emitter', function (done) {
+    var foo = mock(new EventEmitter());
+    when(foo).bar('test').return('a');
+    assert.equal(foo.bar('test'), 'a');
+
+    foo.on('test', done);
+    foo.emit('test');
 });
 
 it('should return expected for matched type', function () {
