@@ -1,0 +1,38 @@
+{
+  "name": "ruff-mock",
+  "version": "0.1.0",
+  "description": "Ruff Mocking Library",
+  "main": "src/index.js",
+  "scripts": {
+    "install-sdk": "rvm install --local",
+    "install-rap-dependencies": "rap install",
+    "lint": "eslint .",
+    "pretest": "npm run lint -- --quiet",
+    "test": "ruff test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruffjs/ruff-mock.git"
+  },
+  "keywords": [
+    "ruff",
+    "mock"
+  ],
+  "author": "Nanchao Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ruffjs/ruff-mock/issues"
+  },
+  "homepage": "https://github.com/ruffjs/ruff-mock#readme",
+  "devDependencies": {
+    "eslint": "^3.8.0",
+    "ruff-standard": "^0.2.2",
+    "rvm": "^0.3.2"
+  },
+  "ruff": {
+    "dependencies": {},
+    "devDependencies": {
+      "t": "^0.1.7"
+    }
+  }
+}

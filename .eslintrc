@@ -1,0 +1,11 @@
+{
+    "root": true,
+    "env": {
+        "node": true
+    },
+    "extends": "./node_modules/ruff-standard/eslint-base.json",
+    "globals": {
+        "Proxy": true,
+        "it": true
+    }
+}
