@@ -11,15 +11,20 @@ var slice = call.bind(Array.prototype.slice);
 /**
  * @param {Object} [object] An object to fallback for unmatched method
  *     invocations.
+ * @param {boolean} [mockAny] Indicates whether to create method if expectation
+ *     does not exist.
  * @returns {Proxy} A proxy.
  */
-function mock(object) {
+function mock(object, mockAny) {
     if (typeof object === 'undefined') {
         object = {};
     }
 
     Object.defineProperties(object, {
         __expectations__: {
+            value: Object.create(null)
+        },
+        __invocations__: {
             value: Object.create(null)
         }
     });
@@ -31,6 +36,10 @@ function mock(object) {
             if (expectationGroups && name in expectationGroups) {
                 return function () {
                     return mockedMethod.call(this, target, name, arguments);
+                };
+            } else if (mockAny && !(name in target)) {
+                return function () {
+                    return spiedMethod.call(this, target, name, function () { }, arguments);
                 };
             } else {
                 return target[name];
@@ -73,6 +82,13 @@ function mockedMethod(target, name, args) {
 
     expectation.hit++;
 
+    var invocationsMap = target.__invocations__;
+    var invocations = invocationsMap[name] || (invocationsMap[name] = []);
+
+    invocations.push({
+        args: args
+    });
+
     if (typeof expectation.then === 'function') {
         return expectation.then.apply(this, args);
     } else if (expectation.error) {
@@ -90,19 +106,22 @@ function spy(object) {
     Object.defineProperties(object, {
         __expectations__: {
             value: Object.create(null)
+        },
+        __invocations__: {
+            value: Object.create(null)
         }
     });
 
     return new Proxy(object, {
         get: function (target, name) {
-            var expectationGroups = target.__expectations__;
+            var value = target[name];
 
-            if (expectationGroups && name in expectationGroups) {
+            if (typeof value === 'function') {
                 return function () {
-                    return spiedMethod.call(this, target, name, arguments);
+                    return spiedMethod.call(this, target, name, value, arguments);
                 };
             } else {
-                return target[name];
+                return value;
             }
         }
     });
@@ -124,7 +143,7 @@ exports.expect = expect;
 // SPIED //
 ///////////
 
-function spiedMethod(target, name, args) {
+function spiedMethod(target, name, method, args) {
     var expectation = matchExpectation(
         target.__expectations__[name],
         args
@@ -134,29 +153,47 @@ function spiedMethod(target, name, args) {
         expectation.hit++;
     }
 
-    return target[name].apply(this, args);
+    var invocationsMap = target.__invocations__;
+    var invocations = invocationsMap[name] || (invocationsMap[name] = []);
+
+    invocations.push({
+        args: args
+    });
+
+    return method.apply(this, args);
 }
-
-////////////
-// VERIFY //
-////////////
-
-function verify(spy) {
-    for (var name in spy.__expectations__) {
-        var expectations = spy.__expectations__[name];
-
-        for (var i = 0; i < expectations.length; i++) {
-            var expectation = expectations[i];
-            validateRepetition(name, expectation);
-        }
-    }
-}
-
-exports.verify = verify;
 
 ////////////
 // SHARED //
 ////////////
+
+function verify(object, options) {
+    var verifyExpectations;
+
+    if (typeof options === 'boolean') {
+        verifyExpectations = options;
+        options = undefined;
+    }
+
+    if (verifyExpectations && object.__expectations__) {
+        for (var name in object.__expectations__) {
+            var expectations = object.__expectations__[name];
+
+            for (var i = 0; i < expectations.length; i++) {
+                var expectation = expectations[i];
+                validateRepetition(name, expectation);
+            }
+        }
+    }
+
+    return new Proxy({}, {
+        get: function (target, name) {
+            return createVerificationMethod(object, name, options || {});
+        }
+    });
+}
+
+exports.verify = verify;
 
 function ExpectationQuery(expectation) {
     this._expectation = expectation;
@@ -176,9 +213,9 @@ ExpectationQuery.prototype.then = function (handler) {
     this._expectation.then = handler;
 };
 
-function createExpectationMethod(target, name, mode, options) {
+function createExpectationMethod(object, name, mode, options) {
     return function () {
-        var expectationGroups = target.__expectations__;
+        var expectationGroups = object.__expectations__;
         var expectations = expectationGroups[name] ||
             (expectationGroups[name] = []);
 
@@ -198,7 +235,32 @@ function createExpectationMethod(target, name, mode, options) {
     };
 }
 
+function createVerificationMethod(object, name, options) {
+    return function () {
+        var invocationsMap = object.__invocations__;
+        var invocations = invocationsMap[name] || (invocationsMap[name] = []);
+
+        var argConstraints = slice(arguments);
+
+        var hit = invocations
+            .filter(function (invocation) {
+                return compareArguments(invocation.args, argConstraints);
+            })
+            .length;
+
+        validateRepetition(name, {
+            hit: hit,
+            repeat: options.repeat,
+            args: argConstraints
+        });
+    };
+}
+
 function matchExpectation(expectations, args) {
+    if (!expectations) {
+        return undefined;
+    }
+
     var matchedExpectation;
 
     for (var i = 0; i < expectations.length; i++) {
@@ -221,13 +283,15 @@ function testExpectation(expectation, args) {
         return undefined;
     }
 
-    var argConstraints = expectation.args;
+    return compareArguments(args, expectation.args);
+}
 
-    if (argConstraints.length !== args.length) {
+function compareArguments(args, constraints) {
+    if (constraints.length !== args.length) {
         return false;
     }
 
-    return argConstraints.every(function (constraint, index) {
+    return constraints.every(function (constraint, index) {
         return testValueConstraint(constraint, args[index]);
     });
 }

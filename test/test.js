@@ -136,7 +136,7 @@ it('should verify expected invocation of mocker', function () {
     var foo = mock(new Foo());
     when(foo).bar('test').return('result');
     assert.equal(foo.bar('test'), 'result');
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation of mocker', function () {
@@ -146,7 +146,7 @@ it('should error verifying unexpected invocation of mocker', function () {
     assert.equal(foo.bar('test'), 'result');
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /hahaha/);
 });
 
@@ -158,7 +158,7 @@ it('should verify expected invocation of spy', function () {
     });
     expect(foo).bar('test');
     assert.equal(foo.bar('test'), 'result');
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation of spy', function () {
@@ -172,7 +172,7 @@ it('should error verifying unexpected invocation of spy', function () {
     assert.equal(foo.bar('test'), 'result');
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /hahaha/);
 });
 
@@ -188,7 +188,7 @@ it('should verify expected invocation with `times`', function () {
     foo.bar('yo');
     foo.bar('yo');
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation with `times`', function () {
@@ -203,7 +203,7 @@ it('should error verifying unexpected invocation with `times`', function () {
     foo.bar('yo');
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /yo/);
 });
 
@@ -216,7 +216,7 @@ it('should verify expected invocation with `any`', function () {
 
     foo.bar('test');
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation with `any`', function () {
@@ -227,7 +227,7 @@ it('should error verifying unexpected invocation with `any`', function () {
     expect(foo).bar(any);
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /Any/);
 });
 
@@ -237,7 +237,7 @@ it('should verify expected invocation with `never`', function () {
     });
 
     expect(foo, never()).bar();
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation with `never`', function () {
@@ -250,7 +250,7 @@ it('should error verifying unexpected invocation with `never`', function () {
     foo.bar();
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /0 time/);
 });
 
@@ -265,7 +265,7 @@ it('shuld verify expected invocation with `never` while other args call', functi
     foo.bar(123);
     foo.ha();
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should verify expected invocation with `once`', function () {
@@ -277,7 +277,7 @@ it('should verify expected invocation with `once`', function () {
 
     foo.bar();
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should verify expected invocation with `twice`', function () {
@@ -290,7 +290,7 @@ it('should verify expected invocation with `twice`', function () {
     foo.bar();
     foo.bar();
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should verify expected invocation with `atLeast`', function () {
@@ -303,7 +303,7 @@ it('should verify expected invocation with `atLeast`', function () {
     foo.bar();
     foo.bar();
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation with `atLeast`', function () {
@@ -316,7 +316,7 @@ it('should error verifying unexpected invocation with `atLeast`', function () {
     foo.bar();
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /1 time/);
 });
 
@@ -330,7 +330,7 @@ it('should verify expected invocation with `atMost`', function () {
     foo.bar();
     foo.bar();
 
-    verify(foo);
+    verify(foo, true);
 });
 
 it('should error verifying unexpected invocation with `atMost`', function () {
@@ -345,6 +345,24 @@ it('should error verifying unexpected invocation with `atMost`', function () {
     foo.bar();
 
     assert.throws(function () {
-        verify(foo);
+        verify(foo, true);
     }, /0 to 2/);
+});
+
+it('should verify any mock', function () {
+    var foo = mock({}, true);
+
+    foo.bar('a');
+    foo.bar('b');
+
+    verify(foo, twice()).bar(String);
+    verify(foo, once()).bar('a');
+
+    assert.throws(function () {
+        verify(foo).yo();
+    });
+
+    assert.throws(function () {
+        verify(foo, twice()).bar('a');
+    });
 });
